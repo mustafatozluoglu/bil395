@@ -1,0 +1,409 @@
+options
+{
+  UNICODE_INPUT = true;
+  static = true;
+}
+
+PARSER_BEGIN(Peakasso)
+package peakasso;
+import java.io.*;
+import java.util.ArrayList;
+
+public class Peakasso{
+    
+    //Brush classı 
+    static class Brush {
+    
+        // brush ismi
+        public String BrushName;
+        
+        // en ve boy
+        public int en;
+        public int boy;
+      
+        
+        // constructor isim boy ve en verilerek
+        Brush(String name,int en , int boy) {
+            this.BrushName= name;
+            this.en=en;
+            this.boy=boy;
+        }
+      
+    }
+//global değişkenler
+   public static char[][] canvas ; //bu canvas matrixi cizilen brushları taşır * ifadesiyle
+    public static int CanvasX; // matrixin x 
+    public static int CanvasY; //matrixin ysi
+   public static int CursorX; //cursor x ve cursor y
+    public static int CursorY;
+   
+    public static ArrayList<Brush> list=new ArrayList();  //bu array list brusların objelerini alır  kac tane varsa artık
+    
+    public static void main(String[] args) throws ParseException, TokenMgrError {
+        // Create a new parser and feed it the standard input
+        Peakasso parser = new Peakasso(System.in);
+        try {
+            parser.parse();
+        }
+        catch(TokenMgrError e) {
+            System.err.println("[LEXING ERROR] Invalid character");
+            System.exit(0);
+        }
+        catch(ParseException e) {
+            System.err.println("[PARSING EXCEPTION] Invalid Input");
+            System.exit(0);
+        }
+        
+    }    
+}
+
+
+PARSER_END(Peakasso)
+//skipler
+SKIP:
+{
+    " " |
+    "\r" |
+    "\t" 
+}
+
+
+// Tokenlar yazılan komutlara göre
+TOKEN :
+{
+    <CANVASX: "CONST CanvasX"> |
+    <CANVASY: "CONST CanvasY"> |
+    <CURSORX: "CursorX"> |
+    <CURSORY: "CursorY"> |
+    <BRUSH: "BRUSH"> |
+    <COMMA: ","> |
+    <RENBRUSH: "RENEW-BRUSH"> |
+    <NOKVI: ";"> |
+    <ENTER: "\n"> |
+    <MOVE: "MOVE"> |
+    <TO : "TO" > |
+    <PLUS: "PLUS"> |
+    <MINUS: "MINUS"> |
+    <PRINT: "EXHIBIT-CANVAS"> |
+    <PAINT: "PAINT-CANVAS"> |
+    // Cover all possible formats of numbers
+    <NUMBER : ((["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ | (["0"-"9"])+ ".")+ >  |
+    <WORD: (["a"-"z", "A"-"Z"])+> |
+    < EQOP : "=" >
+}
+
+
+
+void parse()throws ParseException: 
+{ 
+}
+{
+    
+ {
+ System.out.println("CANVAS-INIT-SECTION");
+ System.out.println("!! Define the canvas size and initial cursor location");
+
+ 
+ }
+  canvasInitSection() <EOF>
+}
+//canvas initialize edildiği yer
+//burdaki ; ler komutların sonuna yazılan lardır
+void  canvasInitSection() throws ParseException:  
+{
+ Token token;
+}
+{
+   ( 
+       (
+          < CANVASX > < EQOP > token = < NUMBER> {
+            CanvasX= Integer.parseInt(token.image); //string değer integere cevrilerek canvasx değeri alınır
+         	}
+           ";"
+          | 
+          < CANVASY > < EQOP > token = < NUMBER> {
+            CanvasY= Integer.parseInt(token.image); //yazılan deyer integere cevrilerek canvasy alınır
+ 
+         	}
+          ";"
+         | 
+          < CURSORX > < EQOP > token = < NUMBER> { //cursor değeri alınır ve yukarda tanımlana matris canvasx ve canvasy kadar tanımlanır
+            canvas= new char[CanvasX][CanvasY];  
+            for(int i=0;i<CanvasX;i++)
+                for(int j=0;j<CanvasY;j++)
+                    canvas[i][j]=' '; //boş olarak initilaze edilir bu en son ekranda göstereceğimiz ve icini paintle boyacagımız matris
+            CursorX= Integer.parseInt(token.image);
+         	}
+        ";"
+        | 
+          < CURSORY > < EQOP > token = < NUMBER> { //cursor y değeri integerea cevrilerek cursor y atanır
+            CursorY= Integer.parseInt(token.image);
+         	}
+        ";"
+
+)* //tekrar tekrar yazılabilir * ifade ile değerleri değiştirelebilir
+"\n"( BrushDec())) // ve brush declare fonksiyonuna yönlendir
+}
+
+
+
+
+//brush tanımlamaları yapılır değerler girilir
+// ,( COMMA)ifadesi aradaki brush değerlimdem sonra yeni bi brush tanımlama icindir
+void BrushDec() throws ParseException:
+{
+  Token token2; 
+  String name; // name en ve boy yukarıdaki  gibi bir brush classı tanımlatıp array liste atama yapmak icindir
+  int en;
+  int boy;
+ 
+}
+{
+  {
+   System.out.println("BRUSH-DECLARATION-SECTION: !!  Declare brushes");
+  }   
+
+
+ ( 
+
+   (  
+        < BRUSH > //sadece bir kere brush
+    ) 
+   (token2 = < WORD> {
+                 name=token2.image; //ilk yazılan brush namedir
+         	}
+            token2 =<NUMBER>{
+            en =Integer.parseInt(token2.image); //ikinci yazılan numara en değerdir
+       
+           } 
+         token2 =<NUMBER>{
+            boy =Integer.parseInt(token2.image);  // 3. yazılan ise boy değeridi
+         Brush brush = new Brush(name,en,boy); //bir brush objesi oluşturulur
+         list.add(brush); //ve arrayliste eklenir
+         }   
+        
+               
+
+  (< COMMA > | ";")  )*
+"\n"(RenewBrush()| move() | Paint() )) //yazılana göre yönlendirme yapar eğer renew yazılırsa oraya move yazılırsa move a paint ise painte
+}
+
+
+//brushları yeniden tanımlama icindir
+void RenewBrush()  throws ParseException:
+{
+  Token token2;
+  String name;
+  int en;
+  int boy;
+ 
+}
+{
+  
+ (
+
+   (
+        <RENBRUSH>      
+   ) 
+   (( token2 = < WORD> {
+                 name=token2.image; //ilk yazılan isimdir
+         	}
+         
+      (token2 = < NOKVI> { //eger isimden sonra ; yazılırsa listede varsa yazılan brush name en ve boy 1 yazılır ve kullanıcı bilgilendirilir
+               for(Brush brs : list) { 
+             if(brs.BrushName.equals(name)) { 
+                 brs.en=1;
+                 brs.boy = 1;
+             }
+             }
+       System.out.println(" !! Assume the users enter 1 1 ");
+           foo(); //burdaki foo fonksiyonu renew brush burda kesildiği icin yeni bir tanımla yapılırsa yönledirilir 
+            //kullanıcı paint yazarsa painte move yazarsa move a
+           
+        }
+ |
+  (        token2 =<NUMBER>{ //en değeri
+            en =Integer.parseInt(token2.image);
+
+           } 
+         
+         token2 =<NUMBER>{ //boy değeri
+            boy =Integer.parseInt(token2.image); 
+             System.out.println(boy);
+            for(Brush brs : list) {  //listede varsa en ve boy değerleri girilmesine göre güncellenir
+             if(brs.BrushName.equals(name)) { 
+                 brs.en=en;
+                 brs.boy = boy;
+          }
+        }
+         }  
+   )
+  )             
+
+  )(< COMMA > | <NOKVI>)  )* //aynı brushda olduğu gibi , ile yeni brush değerleri güncellenebilir 
+"\n"(RenewBrush()| move() | Paint())) //yine yönlendirme yapara
+}
+
+//sadece yönlendirme yapar
+void foo() throws ParseException:
+{
+}
+{
+(RenewBrush()| move() | Paint())
+}
+
+//yazılan move komutuyla cursorx ve cursory icin güncellemeler yapar
+void move() throws ParseException:
+{  
+   Token token;
+}
+{
+ ( 
+  
+  (  <MOVE>
+     (   
+         <CURSORX><TO> //move cursorx to icin 
+          (
+         token = < NUMBER> {//sadece sayı yazılabilir
+            CursorX= Integer.parseInt(token.image);
+                
+         	}
+           ";"
+          | 
+           <CURSORY>( //ekstra cursory ve sayı yazılabilir
+             <MINUS> token = < NUMBER>  {
+            CursorX= CursorY -Integer.parseInt(token.image); //bu demek cursor x den cursor y yi cıkar
+             
+         	}
+           ";"
+          | 
+           <PLUS> token = < NUMBER>  { 
+            CursorX=CursorY + Integer.parseInt(token.image); //bu demek cursor x e cursor y ekle
+              
+         	}
+         ";" 
+           )
+         |
+         <CURSORX>( //a ya da cursorx ve cursor x yazılabilir
+             <MINUS> token = < NUMBER>  {
+            CursorX= CursorX -Integer.parseInt(token.image); //bu da cursorx den cursorx  sayı kadar cıkar
+              
+         	}
+           ";"
+          | 
+           <PLUS> token = < NUMBER>  { 
+            CursorX=CursorX + Integer.parseInt(token.image);////bu da cursorx den cursorx  sayı kadar eklemek
+               
+         	}
+         ";" 
+           )
+
+          )        
+    
+         |
+   
+       <CURSORY><TO> // move cursory ile ilgili
+          (
+         token = < NUMBER>  { //sadece sayi olabilir
+            CursorY= Integer.parseInt(token.image);
+         	}
+          ";"
+         | 
+        <CURSORX>
+           (
+          <PLUS> token = < NUMBER>  { 
+            CursorY= CursorX + Integer.parseInt(token.image); //bu da cursorx e sayı kadar ekle cursory e eşitle
+         	}
+        ";"
+         | 
+            <MINUS> token = < NUMBER>  { 
+            CursorY= CursorX - Integer.parseInt(token.image);//bu da cursorx e sayı kadar cıkar cursory e eşitle
+           
+         	}
+        ";"
+          )           
+        |
+       <CURSORY>
+           (
+          <PLUS> token = < NUMBER>  { 
+            CursorY= CursorY + Integer.parseInt(token.image); //bu da cursory e sayı kadar ekle cursory e eşitle
+               
+         	}
+        ";"
+         | 
+            <MINUS> token = < NUMBER>  { 
+            CursorY= CursorY - Integer.parseInt(token.image);//bu da cursory e sayı kadar cıkar cursory e eşitle
+         	}
+        ";"
+          )
+
+
+
+        )
+  )
+)*
+"\n"( RenewBrush()| move() | Paint())) //yönlendirmeler
+
+}
+
+//verilen brushu canvas maixinde cizer
+void Paint() throws ParseException: 
+{ 
+Token  token4;
+String name;
+}
+{
+(
+ ( <PAINT> token4 = < WORD> {
+                 name=token4.image;
+         //bu name brush listesinde varsa
+           for(Brush brs : list) { 
+             if(brs.BrushName.equals(name)) { 
+                int a=CursorX; 
+                int b= CursorY; 
+                 int i=0;
+                 int j=0;
+                 while(b<CanvasY&&i<brs.en) //öncelikle en kadar cizilecek canvas y gecmeyecek şekilde
+                   {
+                  while(a<CanvasX&&j<brs.boy) //her en icin boy cizilecek brush boyu kadar yapacak ekstra olarak canvas x i gecemez
+                   {
+                      canvas[b][a] = '*';    //* ifadesi canvas a yazılacak boy cizerken x tarafında ilerleyecek
+                      a++;
+                      j++; //j kafdar yapması icin yani brush boyu kada
+                   }
+                 a=CursorX;   //bir tane daha cizerken cursorx tekrar eşitlenir aynı hizada cizmesi icin
+                 i++;
+                 b++;
+                 j=0;
+                   }
+            
+                   
+              }
+        }
+              
+       }
+ ";"
+)
+"\n"( RenewBrush()| move() | Paint() | printCanvas() )) //yönlendirmeler
+}
+//canvası ekrana yazar
+void printCanvas() throws ParseException: 
+{ 
+}
+{
+( 
+(  <PRINT>
+   { //canvas matrixi ekrana yazar
+   for(int i=0; i<CanvasX;i++){
+     for(int j=0;j<CanvasY;j++)
+       System.out.print(canvas[i][j]);
+    System.out.println();
+   }
+   }
+ ";"
+)
+"\n")
+}
+
+
+

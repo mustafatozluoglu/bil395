@@ -1,0 +1,31 @@
+PROGRAM ETU;
+CANVAS-INIT-SECTION :
+!! Define the canvas size and initial cursor location
+CONST CanvasX = 50 ; CONST CanvasY = 50 ; CursorX = 1 ; CursorY = 1 ;
+BRUSH-DECLARATION-SECTION : !! Declare brushes
+BRUSH b1 = 1 4 BLUE, b2 = 1 5 RED, b3 = 6 1 ORANGE, b4 = 7 1 ORANGE, b5 = 7 1 BLUE, b6 = 7 1 RED, b7 = 1 3 BLUE, b8 = 1 4 BLUE, b9 = 1 5 ORANGE;
+DRAWING-SECTION : !! Start drawing
+PAINT-CANVAS b1;
+PAINT-CANVAS b5;
+MOVE CursorY TO 4;
+PAINT-CANVAS b7;
+MOVE CursorY TO 7;
+PAINT-CANVAS b1;
+
+MOVE CursorX TO 8;
+MOVE CursorY TO 1;
+PAINT-CANVAS b2;
+MOVE CursorX TO 10;
+PAINT-CANVAS b6;
+
+MOVE CursorX TO 16;
+MOVE CursorY TO 1;
+PAINT-CANVAS b4;
+MOVE CursorX TO 16;
+MOVE CursorY TO 7;
+PAINT-CANVAS b9;
+MOVE CursorX TO 20;
+MOVE CursorY TO 1;
+PAINT-CANVAS b4;
+
+EXHIBIT-CANVAS;
